@@ -9,6 +9,7 @@ app = Flask(__name__)
 scheduler = APScheduler()
 load_dotenv()
 
+# elastic cred
 ELASTIC_PASSWORD = os.getenv('ELASTIC_PASSWORD')
 ELASTIC_HOST = os.getenv('ELASTIC_HOST')
 def elastic_query():
