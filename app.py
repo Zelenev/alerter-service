@@ -1,7 +1,8 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify, request, redirect
 from flask_apscheduler import APScheduler
 from elasticsearch import Elasticsearch
 import json
+import yaml
 from dotenv import load_dotenv
 import os
 
@@ -43,7 +44,8 @@ def elastic_query():
             response = es.search(index=rule_index, body=search, size=50)['hits']['hits']
 
             if not response:
-                print("Нет событий, удовлетворяющих правилу: " + rule_name)
+                # print("Нет событий, удовлетворяющих правилу: " + rule_name)
+                pass
             else:
                 for hit in response:
                     index_name = hit["_index"]
@@ -52,7 +54,7 @@ def elastic_query():
                     timestamp = hit["_source"]["@timestamp"]
 
                     # индекс, имя правила, мэссэдж, ссылка
-                    document = {'timestamp': timestamp, 'alerter.index_name': index_name, "alerter.author": author, "alerter.level": level, "alerter.references": references, 'alerter.rule_name': rule_name, "alerter.description": description, 'message': rule_message,"alerter.severity": severity, 'alerter.source_url': link}
+                    document = {"timestamp": timestamp, "alerter.index_name": index_name, "alerter.author": author, "alerter.level": level, "alerter.references": references, "alerter.rule_name": rule_name, "alerter.description": description, "message": rule_message,"alerter.severity": severity, "alerter.source_url": link}
 
                     # добавляем сработку в индекс алертера
                     alert = es.index(index="alerter", body=document)
@@ -81,6 +83,25 @@ def get_rules_list():
 
     return render_template("rules.html", list_rules=list_rules)
 
+@app.route('/upload', methods=['GET','POST'])
+def upload_rule():
+    if request.method == "POST":
+        if request.files:
+            content = request.files.get("file").read()
+
+            if content:
+                jsondump = json.dumps(yaml.safe_load(content), ensure_ascii=False).encode('utf8')
+                upload = jsondump.decode()
+                rule_id = json.loads(upload)["id"]
+
+                es = Elasticsearch(f"http://elastic:{ELASTIC_PASSWORD}@{ELASTIC_HOST}:9200")
+                add = es.index(index="alerter-rules", body=upload, id=rule_id)
+
+                return "Status: " + add["result"]
+            else:
+                return "Uploaded Unsuccessful"
+
+    return render_template("upload.html")
 
 if __name__ == '__main__':
     scheduler.add_job(id='elastic task', func=elastic_query, trigger='interval', seconds=int(os.getenv('TIME_RANGE')))
