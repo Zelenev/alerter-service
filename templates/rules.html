@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список правил</title>
+</head>
+<body>
+
+<div class="rules-container">
+
+{% for title, description in list_rules.items() %}
+    <div class="rule-item">
+        <div class="devide"></div>
+        <div class="rule-content">
+            <a class="rule">
+                <span class="title"><h4>{{ title }} : {{ description }}</h4></span>
+            </a>
+        </div>
+    </div>
+{% endfor %}
+
+</div>
+
+</body>
+</html>
